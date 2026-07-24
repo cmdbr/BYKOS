@@ -11,7 +11,8 @@
         h2, h3 { color: #2c3e50; text-align: center; margin-top: 0; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
-        input, select { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        input, select, textarea { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; font-family: inherit; }
+        textarea { resize: vertical; height: 80px; }
         button { background: #ff6b6b; color: white; border: none; padding: 14px 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         button:hover { background: #ee5253; }
         .hidden { display: none !important; }
@@ -59,6 +60,10 @@
         <h2>Hoşgeldiniz 🍽️</h2>
         <form id="login-form">
             <div class="form-group">
+                <label>İsim:</label>
+                <input type="text" id="login-name" placeholder="Adınız">
+            </div>
+            <div class="form-group">
                 <label>Teslimat Adresi:</label>
                 <input type="text" id="login-address" placeholder="Adresiniz">
             </div>
@@ -70,7 +75,7 @@
                 <label>Şifre:</label>
                 <input type="password" id="login-password" required placeholder="Şifreniz">
             </div>
-            <span class="warning-text">⚠️ Admin telefon numaranızı ve adresinizi görebilir.</span>
+            <span class="warning-text">⚠️ Admin telefon numaranızı, adresinizi ve isminizi görebilir.</span>
             <button type="submit" style="margin-top: 10px;">Giriş Yap</button>
         </form>
     </div>
@@ -100,6 +105,11 @@
             <div class="box">
                 <h3>🥤 İçecekler</h3>
                 <div id="drinks-container"></div>
+            </div>
+
+            <div class="box">
+                <h3>📝 Ek Sipariş Notu</h3>
+                <textarea id="order-note" placeholder="Örn: Az tuzlu olsun, zili çalmayın vb."></textarea>
             </div>
 
             <button type="submit" style="background: #27ae60; margin-bottom: 20px;">Siparişi Onayla</button>
@@ -189,6 +199,7 @@
 
     document.getElementById("login-form").addEventListener("submit", function(e) {
         e.preventDefault();
+        const name = document.getElementById("login-name").value;
         const address = document.getElementById("login-address").value;
         const phone = document.getElementById("login-phone").value;
         const password = document.getElementById("login-password").value;
@@ -199,13 +210,13 @@
             return;
         }
 
-        if(!address || !phone) {
-            alert("Lütfen teslimat adresi ve telefon numaranızı giriniz!");
+        if(!name || !address || !phone) {
+            alert("Lütfen isim, teslimat adresi ve telefon numaranızı giriniz!");
             return;
         }
 
-        currentUserData = { address: address, phone: phone };
-        document.getElementById("user-info-display").innerHTML = `📍 ${address} <br>📞 ${phone}`;
+        currentUserData = { name: name, address: address, phone: phone };
+        document.getElementById("user-info-display").innerHTML = `👤 ${name} <br>📍 ${address} <br>📞 ${phone}`;
         
         loadOrderScreen();
         document.getElementById("login-screen").classList.add("hidden");
@@ -322,6 +333,12 @@
             }
         });
 
+        const orderNote = document.getElementById("order-note").value.trim();
+        if(orderNote) {
+            orderDetails.push(`Not: ${orderNote}`);
+            summaryText += `<li><b>Ek Not:</b> ${orderNote}</li>`;
+        }
+
         if(total === 0) {
             alert("Lütfen en az bir ürün seçiniz!");
             return;
@@ -332,6 +349,7 @@
         let orders = JSON.parse(localStorage.getItem("restaurant_orders")) || [];
         orders.push({
             id: Date.now(),
+            name: currentUserData.name,
             address: currentUserData.address,
             phone: currentUserData.phone,
             items: orderDetails.join(", "),
@@ -345,6 +363,7 @@
         summaryDiv.classList.remove("hidden");
 
         loadOrderScreen();
+        document.getElementById("order-note").value = "";
         window.scrollTo(0, document.body.scrollHeight);
     });
 
@@ -377,10 +396,12 @@
             html += `
                 <div class="order-card">
                     <div class="order-info">
+                        <strong>Sipariş Veren:</strong> ${order.name} <br>
                         <strong>Sipariş İçeriği:</strong> ${order.items} <br>
                         <strong>Toplam Tutar:</strong> ${order.total} ₺
                         
                         <div id="details_${index}" class="customer-details">
+                            👤 <b>İsim:</b> ${order.name} <br>
                             📍 <b>Adres:</b> ${order.address} <br>
                             📞 <b>Tel No:</b> ${order.phone} <br>
                             <a href="${mapUrl}" target="_blank" class="map-link">🗺️ Google Haritalar ile Yol Tarifi Al</a>
@@ -411,10 +432,12 @@
             html += `
                 <div class="order-card archived">
                     <div class="order-info">
+                        <strong>Sipariş Veren:</strong> ${order.name} <br>
                         <strong>Sipariş İçeriği:</strong> ${order.items} <br>
                         <strong>Toplam Tutar:</strong> ${order.total} ₺
                         
                         <div id="archive_details_${index}" class="customer-details">
+                            👤 <b>İsim:</b> ${order.name} <br>
                             📍 <b>Adres:</b> ${order.address} <br>
                             📞 <b>Tel No:</b> ${order.phone} <br>
                             <a href="${mapUrl}" target="_blank" class="map-link">🗺️ Google Haritalar ile Yol Tarifi Al</a>
