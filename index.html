@@ -33,7 +33,7 @@
         
         .summary { background: #e8f8f5; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; }
 
-        /* Admin Stilleri Eklemeleri */
+        /* Admin Stilleri */
         .admin-item-card { background: #f9f9f9; padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; position: relative; }
         .admin-item-card h4 { margin-top: 0; margin-bottom: 10px; color: #e67e22; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
         .btn-delete-item { background: #e74c3c !important; width: auto !important; padding: 5px 10px !important; font-size: 12px !important; position: absolute; top: 12px; right: 15px; }
@@ -60,18 +60,18 @@
         <form id="login-form">
             <div class="form-group">
                 <label>Teslimat Adresi:</label>
-                <input type="text" id="login-address" required placeholder="Adresiniz">
+                <input type="text" id="login-address" placeholder="Adresiniz">
             </div>
             <div class="form-group">
                 <label>Telefon Numarası:</label>
-                <input type="tel" id="login-phone" required placeholder="05XX XXX XX XX">
+                <input type="tel" id="login-phone" placeholder="05XX XXX XX XX">
             </div>
             <div class="form-group">
                 <label>Şifre:</label>
                 <input type="password" id="login-password" required placeholder="Şifreniz">
             </div>
             <span class="warning-text">⚠️ Admin telefon numaranızı ve adresinizi görebilir.</span>
-            <button type="submit" style="margin-top: 10px;">Giriş Yap ve Menüyü Gör</button>
+            <button type="submit" style="margin-top: 10px;">Giriş Yap</button>
         </form>
     </div>
 
@@ -88,7 +88,7 @@
                 <div id="meals-container" class="grid-container"></div>
             </div>
 
-<div class="box">
+            <div class="box">
                 <h3>🍚 Pilav Seçimi (Yan Ürün)</h3>
                 <select id="rice-select">
                     <option value="">Pilav İstemiyorum</option>
@@ -124,7 +124,7 @@
             </div>
         </div>
 
-        <!-- ADMİNK ARŞİV BÖLÜMÜ (Sadece ADMİNK ile girildiğinde görünür) -->
+        <!-- ADMİNK ARŞİV BÖLÜMÜ -->
         <div id="admink-archive-box" class="box hidden" style="border: 2px dashed #16a085;">
             <h2 style="color: #16a085;">🗂️ ADMİNK Arşivi (Tamamlanan Siparişler)</h2>
             <div id="archived-orders-container">
@@ -180,25 +180,27 @@
 
     let currentUserData = {};
 
-    // Sayfa açıldığında oturum kontrolü
     window.onload = function() {
-        const activeAdmin = sessionStorage.getItem("admin_login_type");
+        const activeAdmin = localStorage.getItem("admin_login_type");
         if(activeAdmin === "ADMİNKOSE" || activeAdmin === "ADMİNK") {
             showAdminScreen(activeAdmin);
         }
     };
 
-    // Giriş İşlemi
     document.getElementById("login-form").addEventListener("submit", function(e) {
         e.preventDefault();
         const address = document.getElementById("login-address").value;
         const phone = document.getElementById("login-phone").value;
         const password = document.getElementById("login-password").value;
 
-        // Gizli admin girişleri (ADMİNKOSE veya ADMİNK)
         if(password === "ADMİNKOSE" || password === "ADMİNK") {
-            sessionStorage.setItem("admin_login_type", password);
+            localStorage.setItem("admin_login_type", password);
             showAdminScreen(password);
+            return;
+        }
+
+        if(!address || !phone) {
+            alert("Lütfen teslimat adresi ve telefon numaranızı giriniz!");
             return;
         }
 
@@ -281,7 +283,6 @@
         document.getElementById("drinks-container").innerHTML = drinksHTML;
     }
 
-    // Sipariş Verme
     document.getElementById("order-form").addEventListener("submit", function(e) {
         e.preventDefault();
         let total = 0;
@@ -303,8 +304,10 @@
         });
 
         const selectedRice = document.getElementById("rice-select").value;
-        orderDetails.push(selectedRice);
-        summaryText += `<li>Yan Ürün: ${selectedRice}</li>`;
+        if(selectedRice) {
+            orderDetails.push(selectedRice);
+            summaryText += `<li>Yan Ürün: ${selectedRice}</li>`;
+        }
 
         currentMenu.drinks.forEach((drink, index) => {
             const selectEl = document.querySelector(`[name="drink_${index}"]`);
@@ -353,13 +356,12 @@
     }
 
     function adminLogout() {
-        sessionStorage.removeItem("admin_login_type");
+        localStorage.removeItem("admin_login_type");
         document.getElementById("admin-screen").classList.add("hidden");
         document.getElementById("login-screen").classList.remove("hidden");
         document.getElementById("login-password").value = "";
     }
 
-    // Admin Paneli Fonksiyonları
     function loadIncomingOrders() {
         let orders = JSON.parse(localStorage.getItem("restaurant_orders")) || [];
         const container = document.getElementById("incoming-orders-container");
@@ -444,13 +446,13 @@
         let orderIndex = orders.findIndex(o => o.id === orderId);
         if (orderIndex !== -1) {
             let completedOrder = orders.splice(orderIndex, 1)[0];
-            archive.unshift(completedOrder); // En yeni tamamlanan üstte görünür
+            archive.unshift(completedOrder);
 
             localStorage.setItem("restaurant_orders", JSON.stringify(orders));
             localStorage.setItem("restaurant_archive", JSON.stringify(archive));
             
             loadIncomingOrders();
-            const activeAdmin = sessionStorage.getItem("admin_login_type");
+            const activeAdmin = localStorage.getItem("admin_login_type");
             if(activeAdmin === "ADMİNK") {
                 loadArchivedOrders();
             }
