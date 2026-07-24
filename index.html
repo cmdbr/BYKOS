@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sipariş Paneli</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .box { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        h2, h3 { color: #2c3e50; text-align: center; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 14px; }
+        input, select { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; }
+        button { background: #ff6b6b; color: white; border: none; padding: 14px 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background: #ee5253; }
+        .hidden { display: none !important; }
+        
+        .grid-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        @media(min-width: 600px) { .grid-container { grid-template-columns: 1fr 1fr; } }
+        
+        .card { background: #fff; border: 1px solid #eee; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+        .card img { width: 100%; height: 160px; object-fit: cover; }
+        .card-body { padding: 15px; display: flex; flex-direction: column; flex-grow: 1; }
+        .card-title { font-size: 18px; font-weight: bold; margin: 0 0 10px 0; display: flex; justify-content: space-between; }
+        .price { color: #27ae60; }
+        .stock-info { font-size: 13px; color: #7f8c8d; margin-bottom: 10px; }
+        .sold-out { color: #c0392b; font-weight: bold; }
+        
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .list-item:last-child { border-bottom: none; }
+        
+        .admin-link { display: block; text-align: center; margin-top: 15px; color: #3498db; text-decoration: none; font-weight: bold; }
+        .summary { background: #e8f8f5; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- GİRİŞ EKRANI -->
+    <div id="login-screen" class="box">
+        <h2>Hoşgeldiniz 🍽️</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label>Teslimat Adresi:</label>
+                <input type="text" id="login-address" required placeholder="Adresiniz (Kaydedilmez)">
+            </div>
+            <div class="form-group">
+                <label>Telefon Numarası:</label>
+                <input type="tel" id="login-phone" required placeholder="05XX XXX XX XX (Kaydedilmez)">
+            </div>
+            <div class="form-group">
+                <label>Şifre:</label>
+                <input type="password" id="login-password" required placeholder="Şifreniz">
+            </div>
+            <button type="submit">Giriş Yap ve Menüyü Gör</button>
+        </form>
+        <a href="admin.html" class="admin-link">Yetkili Girişi (Admin Paneli)</a>
+    </div>
+
+    <!-- SİPARİŞ ARAYÜZÜ -->
+    <div id="order-screen" class="hidden">
+        <div class="box" style="background: #2c3e50; color: white;">
+            <h2 style="color: white; margin-bottom: 10px;">Günün Menüsü</h2>
+            <p id="user-info-display" style="font-size: 14px; margin: 0; opacity: 0.9;"></p>
+        </div>
+
+        <form id="order-form">
+            <div class="box">
+                <h3>🍲 Yemekler (Max 5 Porsiyon)</h3>
+                <div id="meals-container" class="grid-container"></div>
+            </div>
+
+            <div class="box">
+                <h3>🍚 Pilav Seçimi (Yan Ürün)</h3>
+                <select id="rice-select">
+                    <option value="Bulgur Pilavı">Bulgur Pilavı</option>
+                    <option value="Pirinç Pilavı">Pirinç Pilavı</option>
+                </select>
+            </div>
+
+            <div class="box">
+                <h3>🥤 İçecekler</h3>
+                <div id="drinks-container"></div>
+            </div>
+
+            <button type="submit" style="background: #27ae60; margin-bottom: 20px;">Siparişi Onayla</button>
+        </form>
+
+        <div id="order-summary" class="summary hidden box"></div>
+        <button type="button" onclick="logout()" style="background: #7f8c8d; margin-bottom: 30px;">Çıkış Yap</button>
+    </div>
+</div>
+
+<script>
+    const defaultMenu = {
+        meals: [
+            { name: "Mercimek Çorbası", price: 60, stock: 20, img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80" },
+            { name: "İzmir Köfte", price: 150, stock: 10, img: "https://images.unsplash.com/photo-1529042410759-befb1204b468?w=400&q=80" },
+            { name: "Tavuk Sote", price: 130, stock: 5, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80" },
+            { name: "Kuru Fasulye", price: 90, stock: 15, img: "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80" },
+            { name: "Makarna", price: 70, stock: 12, img: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=80" }
+        ],
+        drinks: [
+            { name: "Ayran", price: 20 },
+            { name: "Kola", price: 35 },
+            { name: "Su", price: 10 }
+        ]
+    };
+
+    let currentMenu = JSON.parse(localStorage.getItem("restaurant_menu"));
+    if (!currentMenu) {
+        currentMenu = defaultMenu;
+        localStorage.setItem("restaurant_menu", JSON.stringify(currentMenu));
+    }
+
+    window.onload = function() {
+        const savedPass = sessionStorage.getItem("user_password");
+        if(savedPass) {
+            document.getElementById("login-password").value = savedPass;
+        }
+    };
+
+    document.getElementById("login-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const address = document.getElementById("login-address").value;
+        const phone = document.getElementById("login-phone").value;
+        const password = document.getElementById("login-password").value;
+
+        sessionStorage.setItem("user_password", password);
+        document.getElementById("user-info-display").innerHTML = `📍 ${address} <br>📞 ${phone}`;
+        
+        loadOrderScreen();
+        document.getElementById("login-screen").classList.add("hidden");
+        document.getElementById("order-screen").classList.remove("hidden");
+    });
+
+    function loadOrderScreen() {
+        let mealsHTML = "";
+        currentMenu.meals.forEach((meal, index) => {
+            let maxSelectable = Math.min(5, meal.stock);
+            let selectOptions = "";
+            
+            if(meal.stock <= 0) {
+                selectOptions = `<option value="0">Tükendi</option>`;
+            } else {
+                for(let i=0; i<=maxSelectable; i++) {
+                    selectOptions += `<option value="${i}">${i} Porsiyon</option>`;
+                }
+            }
+
+            mealsHTML += `
+                <div class="card">
+                    <img src="${meal.img}" alt="${meal.name}">
+                    <div class="card-body">
+                        <div class="card-title">
+                            <span>${meal.name}</span>
+                            <span class="price">${meal.price} ₺</span>
+                        </div>
+                        <div class="stock-info">
+                            ${meal.stock > 0 ? `Kalan Porsiyon: <b>${meal.stock}</b>` : `<span class="sold-out">Tükendi</span>`}
+                        </div>
+                        <select name="meal_${index}" ${meal.stock <= 0 ? 'disabled' : ''}>
+                            ${selectOptions}
+                        </select>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById("meals-container").innerHTML = mealsHTML;
+
+        let drinksHTML = "";
+        currentMenu.drinks.forEach((drink, index) => {
+            drinksHTML += `
+                <div class="list-item">
+                    <span><b>${drink.name}</b> <br><small>${drink.price} ₺</small></span>
+                    <select name="drink_${index}" style="width: 100px;">
+                        <option value="0">0 Adet</option>
+                        <option value="1">1 Adet</option>
+                        <option value="2">2 Adet</option>
+                        <option value="3">3 Adet</option>
+                        <option value="4">4 Adet</option>
+                        <option value="5">5 Adet</option>
+                    </select>
+                </div>
+            `;
+        });
+        document.getElementById("drinks-container").innerHTML = drinksHTML;
+    }
+
+    document.getElementById("order-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        let total = 0;
+        let summaryText = "<h3 style='margin-top:0'>Siparişiniz Alındı! ✅</h3><ul>";
+
+        currentMenu.meals.forEach((meal, index) => {
+            const selectEl = document.querySelector(`[name="meal_${index}"]`);
+            if (selectEl && !selectEl.disabled) {
+                const qty = parseInt(selectEl.value);
+                if(qty > 0) {
+                    let subTotal = qty * meal.price;
+                    total += subTotal;
+                    summaryText += `<li>${qty} porsiyon ${meal.name} - ${subTotal} ₺</li>`;
+                    currentMenu.meals[index].stock -= qty;
+                }
+            }
+        });
+
+        const selectedRice = document.getElementById("rice-select").value;
+        summaryText += `<li>Yan Ürün: ${selectedRice}</li>`;
+
+        currentMenu.drinks.forEach((drink, index) => {
+            const selectEl = document.querySelector(`[name="drink_${index}"]`);
+            if (selectEl) {
+                const qty = parseInt(selectEl.value);
+                if(qty > 0) {
+                    let subTotal = qty * drink.price;
+                    total += subTotal;
+                    summaryText += `<li>${qty} adet ${drink.name} - ${subTotal} ₺</li>`;
+                }
+            }
+        });
+
+        if(total === 0) {
+            alert("Lütfen en az bir ürün seçiniz!");
+            return;
+        }
+
+        summaryText += `</ul><h3 style="margin-bottom:0">Toplam: ${total} ₺</h3>`;
+        
+        localStorage.setItem("restaurant_menu", JSON.stringify(currentMenu));
+        
+        const summaryDiv = document.getElementById("order-summary");
+        summaryDiv.innerHTML = summaryText;
+        summaryDiv.classList.remove("hidden");
+
+        loadOrderScreen();
+        window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    function logout() {
+        document.getElementById("order-summary").classList.add("hidden");
+        document.getElementById("order-screen").classList.add("hidden");
+        document.getElementById("login-screen").classList.remove("hidden");
+    }
+</script>
+</body>
+</html>
