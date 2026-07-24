@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Paneli</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #2c3e50; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .box { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-bottom: 20px; }
+        h2, h3 { color: #2c3e50; text-align: center; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px; color: #7f8c8d; }
+        input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; margin-bottom: 10px;}
+        button { background: #3498db; color: white; border: none; padding: 14px 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background: #2980b9; }
+        .hidden { display: none !important; }
+        .back-link { display: block; text-align: center; margin-top: 15px; color: #ecf0f1; text-decoration: none; font-weight: bold; }
+        
+        .admin-item-card { background: #f9f9f9; padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 15px; }
+        .admin-item-card h4 { margin-top: 0; margin-bottom: 10px; color: #e67e22; border-bottom: 1px solid #ddd; padding-bottom: 5px;}
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        @media(min-width: 500px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- ADMIN GİRİŞ -->
+    <div id="admin-login-screen" class="box" style="margin-top: 10vh;">
+        <h2>🛠️ Yönetici Girişi</h2>
+        <div class="form-group">
+            <label>Admin Şifresi:</label>
+            <input type="password" id="admin-pass" placeholder="Şifrenizi girin (Varsayılan: 1234)">
+        </div>
+        <button onclick="checkAdminLogin()">Sisteme Gir</button>
+    </div>
+    <a href="index.html" id="back-btn" class="back-link">← Sipariş Paneline Dön</a>
+
+    <!-- ADMIN PANELİ -->
+    <div id="admin-panel" class="hidden">
+        <div class="box">
+            <h2>🍽️ Menü, Resim ve Stok Yönetimi</h2>
+            <form id="admin-menu-form">
+                
+                <h3>Yemekler (5 Adet)</h3>
+                <div id="admin-meals-container"></div>
+
+                <h3 style="margin-top: 30px;">İçecekler</h3>
+                <div id="admin-drinks-container"></div>
+
+                <button type="submit" style="background: #27ae60; margin-top: 20px;">Değişiklikleri Kaydet</button>
+            </form>
+        </div>
+        <a href="index.html" class="back-link">← Sipariş Paneline Dön</a>
+    </div>
+</div>
+
+<script>
+    let currentMenu = JSON.parse(localStorage.getItem("restaurant_menu"));
+    
+    if (!currentMenu) {
+        currentMenu = {
+            meals: [
+                { name: "Mercimek Çorbası", price: 60, stock: 20, img: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80" },
+                { name: "İzmir Köfte", price: 150, stock: 10, img: "https://images.unsplash.com/photo-1529042410759-befb1204b468?w=400&q=80" },
+                { name: "Tavuk Sote", price: 130, stock: 5, img: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&q=80" },
+                { name: "Kuru Fasulye", price: 90, stock: 15, img: "https://images.unsplash.com/photo-1596797038530-2c107229654b?w=400&q=80" },
+                { name: "Makarna", price: 70, stock: 12, img: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400&q=80" }
+            ],
+            drinks: [
+                { name: "Ayran", price: 20 },
+                { name: "Kola", price: 35 },
+                { name: "Su", price: 10 }
+            ]
+        };
+    }
+
+    function checkAdminLogin() {
+        const pass = document.getElementById("admin-pass").value;
+        if(pass === "1234") {
+            document.getElementById("admin-login-screen").classList.add("hidden");
+            document.getElementById("back-btn").classList.add("hidden");
+            document.getElementById("admin-panel").classList.remove("hidden");
+            loadAdminPanel();
+        } else {
+            alert("Hatalı şifre! (Varsayılan: 1234)");
+        }
+    }
+
+    function loadAdminPanel() {
+        let adminMealsHTML = "";
+        currentMenu.meals.forEach((meal, index) => {
+            adminMealsHTML += `
+                <div class="admin-item-card">
+                    <h4>Yemek ${index + 1}</h4>
+                    <label>Yemek Adı</label>
+                    <input type="text" id="admin_meal_name_${index}" value="${meal.name}" required>
+                    
+                    <label>Resim Linki (URL)</label>
+                    <input type="text" id="admin_meal_img_${index}" value="${meal.img}" required>
+                    
+                    <div class="grid-2">
+                        <div>
+                            <label>Fiyat (TL)</label>
+                            <input type="number" id="admin_meal_price_${index}" value="${meal.price}" required min="0">
+                        </div>
+                        <div>
+                            <label>Stok (Kalan Porsiyon)</label>
+                            <input type="number" id="admin_meal_stock_${index}" value="${meal.stock}" required min="0">
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById("admin-meals-container").innerHTML = adminMealsHTML;
+
+        let adminDrinksHTML = "";
+        currentMenu.drinks.forEach((drink, index) => {
+            adminDrinksHTML += `
+                <div class="admin-item-card">
+                    <h4>İçecek ${index + 1}</h4>
+                    <div class="grid-2">
+                        <div>
+                            <label>İçecek Adı</label>
+                            <input type="text" id="admin_drink_name_${index}" value="${drink.name}" required>
+                        </div>
+                        <div>
+                            <label>Fiyat (TL)</label>
+                            <input type="number" id="admin_drink_price_${index}" value="${drink.price}" required min="0">
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById("admin-drinks-container").innerHTML = adminDrinksHTML;
+    }
+
+    document.getElementById("admin-menu-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        
+        for(let i = 0; i < 5; i++) {
+            currentMenu.meals[i].name = document.getElementById(`admin_meal_name_${i}`).value;
+            currentMenu.meals[i].img = document.getElementById(`admin_meal_img_${i}`).value;
+            currentMenu.meals[i].price = parseFloat(document.getElementById(`admin_meal_price_${i}`).value) || 0;
+            currentMenu.meals[i].stock = parseInt(document.getElementById(`admin_meal_stock_${i}`).value) || 0;
+        }
+        
+        for(let i = 0; i < currentMenu.drinks.length; i++) {
+            currentMenu.drinks[i].name = document.getElementById(`admin_drink_name_${i}`).value;
+            currentMenu.drinks[i].price = parseFloat(document.getElementById(`admin_drink_price_${i}`).value) || 0;
+        }
+
+        localStorage.setItem("restaurant_menu", JSON.stringify(currentMenu));
+        alert("Menü, fotoğraflar, fiyatlar ve stoklar tamamen güncellendi!");
+    });
+</script>
+
+</body>
+</html>
